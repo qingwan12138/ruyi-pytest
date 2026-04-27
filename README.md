@@ -1,17 +1,15 @@
 # ruyi-pytest
 
-## test
+## run test
 
 ```bash
 $ uv run pytest
 ```
 
-### iscas repo
+### packages-index from iscas mirror
 
 Create ``.env``:
 
 ```bash
 RUYI_REPO=ISCAS
 ```
-
-Run test.
