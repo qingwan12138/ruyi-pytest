@@ -10,11 +10,22 @@ from tests.helpers import bind_gettext, ruyi_init_default_telemetry, ruyi_instal
 def test_ruyi_list(ruyi_exe: str, ruyi_dep: bool, isolated_env: Dict[str, str]):
     _ = bind_gettext(isolated_env, {
         "zh_CN.UTF-8": {
-            "Running on ": "上运行。",
-            "Copyright (C) Institute of Software, Chinese Academy of Sciences (ISCAS).":
-                "版权所有 (C) 中国科学院软件研究所 (ISCAS)。",
-            "All rights reserved.": "所有权利保留。",
-            "License: Apache-2.0": "许可证：Apache-2.0",
+            "List of available packages:": "可用软件包列表：",
+            "(latest)": "(最新)",
+            "Package declares": "软件包声明了",
+            "distfile(s):": "个分发文件：",
+            "* Slug: (none)": "* Slug：（无）",
+            "* Package kind: [": "* 软件包类型：[",
+            "* Vendor: PLCT": "* 供应商：PLCT",
+            "* Upstream version number:": "* 上游版本号：",
+            "### Binary artifacts": "### 二进制制品",
+            "### Toolchain metadata": "### 工具链元数据",
+            "* Target:": "* 目标：",
+            "* Quirks:": "* 特殊特性：",
+            "* Components:": "* 组件：",
+            "installed": "已安装",
+            "arch:": "架构：",
+            "needs quirks:": "需要特殊特性：",
         },
     })
 
@@ -28,7 +39,8 @@ def test_ruyi_list(ruyi_exe: str, ruyi_dep: bool, isolated_env: Dict[str, str]):
     )
     try:
         child.expect_exact(_("List of available packages:"))
-        child.expect_exact(_("* toolchain"))
+        child.expect_exact("* toolchain")
+        child.expect_exact(_("(latest)"))
         between = child.before
         assert _("Package declares") not in between
         child.expect(pexpect.EOF)
@@ -48,7 +60,7 @@ def test_ruyi_list(ruyi_exe: str, ruyi_dep: bool, isolated_env: Dict[str, str]):
     try:
         child.expect(r"## toolchain/gnu-plct-xthead .*")
         child.expect_exact(_("* Slug: (none)"))
-        child.expect_exact(_("* Package kind:"))
+        child.expect_exact(_("* Package kind: ["))
         child.expect_exact(_("* Vendor: PLCT"))
         child.expect_exact(_("* Upstream version number:"))
         child.expect(
@@ -168,6 +180,7 @@ def test_ruyi_list(ruyi_exe: str, ruyi_dep: bool, isolated_env: Dict[str, str]):
         timeout=5,
     )
     try:
+        child.expect_exact(_("arch:"))
         child.expect_exact(_("needs quirks:"))
         child.expect(pexpect.EOF)
     finally:
