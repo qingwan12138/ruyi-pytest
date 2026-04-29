@@ -99,3 +99,95 @@ ruyi-deactivate
             output = child.before
         finally:
             child.close()
+
+
+def test_ruyi_toolchain_gnu_milkv(ruyi_exe: str, ruyi_dep: bool, isolated_env: Dict[str, str], tmp_path: Path):
+    ruyi_init_default_telemetry(ruyi_exe, isolated_env)
+    ruyi_install(
+        ruyi_exe,
+        ["gnu-milkv-milkv-duo-bin", "gnu-milkv-milkv-duo-musl-bin", "gnu-milkv-milkv-duo-elf-bin", ],
+        env=isolated_env,
+    )
+
+    venv_path = tmp_path / "rit-ruyi-basic-ruyi-toolchain_gnu-milkv_musl"
+
+    child = spawn_ruyi(
+        ruyi_exe,
+        [
+            "venv",
+            "-t",
+            "gnu-milkv-milkv-duo-musl-bin",
+            "-t",
+            "gnu-milkv-milkv-duo-elf-bin",
+            "--sysroot-from",
+            "gnu-milkv-milkv-duo-musl-bin",
+            "generic",
+            str(venv_path),
+        ],
+        env=isolated_env,
+    )
+    try:
+        child.expect(pexpect.EOF)
+    finally:
+        child.close()
+    assert child.exitstatus == 0
+
+    test_tmp = tmp_path / "test_tmp"
+    test_tmp.mkdir()
+    test_c = test_tmp / "test.c"
+    test_c.write_text("int main() {return 0;}\n", encoding="utf-8")
+
+    child = spawn_ruyi(
+        "bash",
+        [
+            "-c",
+            f'''
+source "{venv_path}/bin/ruyi-activate"
+riscv64-unknown-elf-gcc -O2 -o "{test_tmp / "test.o"}" "{test_c}"
+echo $?
+riscv64-unknown-linux-musl-gcc -O2 -o "{test_tmp / "test.o"}" "{test_c}"
+echo $?
+ruyi-deactivate
+        ''',
+        ],
+        env=isolated_env,
+    )
+    try:
+        child.expect_exact("0")
+        child.expect_exact("0")
+        child.expect(pexpect.EOF)
+    finally:
+        child.close()
+    assert child.exitstatus == 0
+
+    venv_path = tmp_path / "rit-ruyi-basic-ruyi-toolchain_gnu-milkv"
+    child = spawn_ruyi(
+        ruyi_exe,
+        ["venv", "-t", "gnu-milkv-milkv-duo-bin", "generic", str(venv_path)],
+        env=isolated_env,
+    )
+    try:
+        child.expect(pexpect.EOF)
+    finally:
+        child.close()
+    assert child.exitstatus == 0
+
+    child = spawn_ruyi(
+        "bash",
+        [
+            "-c",
+            f'''
+source "{venv_path}/bin/ruyi-activate"
+riscv64-unknown-linux-gnu-gcc -O2 -o "{test_tmp / "test.o"}" "{test_c}"
+echo $?
+ruyi-deactivate
+        ''',
+        ],
+        env=isolated_env,
+    )
+    try:
+        child.expect_exact("0")
+        child.expect(pexpect.EOF)
+    finally:
+        child.close()
+    assert child.exitstatus == 0
