@@ -19,6 +19,7 @@ def ruyi_exe() -> str:
 @pytest.fixture
 def ruyi_dep() -> bool:
     deps = [
+        "bash",
         "bzip2",
         "gunzip",
         "lz4",
