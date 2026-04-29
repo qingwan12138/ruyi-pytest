@@ -191,3 +191,65 @@ ruyi-deactivate
     finally:
         child.close()
     assert child.exitstatus == 0
+
+
+def test_ruyi_toolchain_gnu_plct_rv64ilp32_elf(ruyi_exe: str, ruyi_dep: bool, isolated_env: Dict[str, str], tmp_path: Path):
+    ruyi_init_default_telemetry(ruyi_exe, isolated_env)
+    ruyi_install(
+        ruyi_exe,
+        ["gnu-plct-rv64ilp32-elf", ],
+        env=isolated_env,
+    )
+
+    venv_path = tmp_path / "rit-ruyi-basic-ruyi-toolchain_gnu-plct-rv64ilp32-elf"
+
+    child = spawn_ruyi(
+        ruyi_exe,
+        ["venv", "-t", "gnu-plct-rv64ilp32-elf", "--without-sysroot", "baremetal-rv64ilp32", str(venv_path)],
+        env=isolated_env,
+    )
+    try:
+        child.expect(pexpect.EOF)
+    finally:
+        child.close()
+    assert child.exitstatus == 0
+
+    test_tmp = tmp_path / "test_tmp"
+    test_tmp.mkdir()
+    test_c = test_tmp / "test.c"
+    test_o = test_tmp / "test.o"
+    test_c.write_text("""
+long long add(long long *a, long long b) { return *a + b; }
+void check(int);
+void checkSizes(void) { check(sizeof(int)); check(sizeof(long)); check(sizeof(long long)); check(sizeof(void *)); }
+""", encoding="utf-8")
+
+    child = spawn_ruyi(
+        "bash",
+        [
+            "-c",
+            f'''
+source "{venv_path}/bin/ruyi-activate"
+riscv64-plct-elf-gcc -O2 -c "{test_c}" -o "{test_o}"
+echo $?
+riscv64-plct-elf-readelf -h "{test_o}"
+echo $?
+riscv64-plct-elf-objdump -dw "{test_o}"
+echo $?
+ruyi-deactivate
+            ''',
+        ],
+        env=isolated_env,
+    )
+    try:
+        child.expect_exact("0")
+        child.expect_exact("ELF Header:")
+        child.expect_exact("ELF32")
+        child.expect_exact("0")
+        child.expect_exact("elf32-littleriscv")
+        child.expect_exact("a0")
+        child.expect_exact("0")
+        child.expect(pexpect.EOF)
+    finally:
+        child.close()
+    assert child.exitstatus == 0
