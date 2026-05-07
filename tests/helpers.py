@@ -32,15 +32,20 @@ def bind_gettext(env: Dict[str, str], catalog: Dict[str, Dict[str, str]]) -> Cal
     return gettext
 
 
-def ruyi_config_iscas_mirror(env: dict[str, str]):
+def ruyi_config_iscas_mirror(key: str, env: dict[str, str]):
     xdg_config_home = env["XDG_CONFIG_HOME"]
     config_dir = Path(xdg_config_home) / "ruyi"
     config_dir.mkdir(parents=True, exist_ok=True)
 
+    REPOs = {
+        "ISCAS": "https://mirror.iscas.ac.cn/git/ruyisdk/packages-index.git",
+        "GITEE": "https://gitee.com/ruyisdk/packages-index.git",
+    }
+
     config_file = config_dir / "config.toml"
     config_file.write_text(
         '[repo]\n'
-        'remote = "https://mirror.iscas.ac.cn/git/ruyisdk/packages-index.git"\n',
+        f'remote = "{REPOs[key]}"\n',
         encoding="utf-8",
     )
 
@@ -51,8 +56,8 @@ def ruyi_init_default_telemetry(ruyi_bin: str, env: Dict[str, str]):
 
     # uncomment if fail to test locally with GitHub mirror
     # ruyi_config_iscas_mirror(myenv)
-    if env.get("RUYI_REPO") == "ISCAS":
-        ruyi_config_iscas_mirror(myenv)
+    if env.get("RUYI_REPO", "") in ["ISCAS", "GITEE", ]:
+        ruyi_config_iscas_mirror(env.get("RUYI_REPO"), myenv)
 
     child = spawn_ruyi(
         ruyi_bin,
