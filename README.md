@@ -1,5 +1,7 @@
 # ruyi-pytest
 
+Successor of [ruyi-litester](https://github.com/ruyisdk-test/ruyi-litester)
+
 ## run test
 
 ```bash
